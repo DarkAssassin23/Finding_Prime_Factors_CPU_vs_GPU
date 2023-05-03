@@ -1,4 +1,4 @@
-# Prime Number Factorization With CUDA
+# Finding Prime Factors: CPU vs. GPU
 
 ## About
 Find the prime factors of a number or list of numbers
