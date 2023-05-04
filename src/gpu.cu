@@ -59,3 +59,8 @@ __host__ std::vector<uint64_t> searchPrimesGPULauncher(const uint64_t N)
     out.push_back(maxPrime);
     return out;
 }
+
+__host__ void initGPU()
+{
+    cudaFree(0);
+}

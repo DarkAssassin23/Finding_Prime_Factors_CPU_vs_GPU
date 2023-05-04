@@ -243,6 +243,7 @@ int main(int argc, char const *argv[])
     cout<<"\n";
     if(useGPU)
     {
+        initGPU();
         Timer t;
         t.start();
         for(uint64_t product : products)
