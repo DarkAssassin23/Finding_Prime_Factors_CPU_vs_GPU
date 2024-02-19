@@ -13,18 +13,18 @@ In order to build the project you must have the following:
 * NVIDIA CUDA Compiler (nvcc) 
   * Make sure nvcc and the CUDA libraries are apart of your path
 
-**Notes**: This code has only has been tested on Linux (RHEL 9.1).
-It should work on Windows too, but has not been tested. If you plan to
-use Windows, all the above requirements apply, but the ```makefile```
-won't work unless you have ```make``` installed through a tool like 
-<a href="https://www.msys2.org" target="new">MSYS2</a>. If you are using Visual
-Studio, you should be able to import the source code into a Visual Studio CUDA 
-project and compile and run it that way.
+> [!NOTE]  This code has only has been tested on Linux (RHEL 9.1).
+> It should work on Windows too, but has not been tested. If you plan to
+> use Windows, all the above requirements apply, but the `makefile`
+> won't work unless you have `make` installed through a tool like 
+> <a href="https://www.msys2.org" target="new">MSYS2</a>. 
+> If you are using Visual Studio, you should be able to import the source 
+> code into a Visual Studio CUDA project and compile and run it that way.
 
 ---------------
 
 ## Building
-To build the project, use the included ```makefile``` by typing:
+To build the project, use the included `makefile` by typing:
 ```
 make
 ```
@@ -47,4 +47,4 @@ Optional Flags:
 Examples:
   ./factor -p 4158294289 -v -cpu=false -gpu=true
   ./factor -f values.txt
-  ```
+```
