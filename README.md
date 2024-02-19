@@ -13,7 +13,8 @@ In order to build the project you must have the following:
 * NVIDIA CUDA Compiler (nvcc) 
   * Make sure nvcc and the CUDA libraries are apart of your path
 
-> [!NOTE]  This code has only has been tested on Linux (RHEL 9.1).
+> [!NOTE]  
+> This code has only has been tested on Linux (RHEL 9.1).
 > It should work on Windows too, but has not been tested. If you plan to
 > use Windows, all the above requirements apply, but the `makefile`
 > won't work unless you have `make` installed through a tool like 
