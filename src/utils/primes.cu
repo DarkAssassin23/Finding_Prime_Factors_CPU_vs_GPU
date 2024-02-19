@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdint>
+#include <climits>
 #include <stdio.h>
 #include <cuda.h>
 #include <assert.h>
@@ -212,10 +213,13 @@ std::vector<uint32_t> genPrimesGPU(void)
     cudaGetDeviceProperties(&prop, 0);
 
     // Half the memory for `isPrime` and the other half for `addend`
-    // plus buffer to not allocate more VRAM than the card has
-    const uint32_t MAX_RANGE = (prop.totalGlobalMem * 0.45f) 
-                                / sizeof(uint32_t);
-    const uint32_t n = max((uint32_t)MIN_PRIMES, MAX_RANGE);
+    // plus buffer to not allocate more VRAM than the card has.
+    // Also make sure we don't overflow the uint32_t if the GPU has a ton
+    // of VRAM
+    const uint64_t MAX_RANGE = min((uint64_t)(prop.totalGlobalMem * 0.45f) 
+                                   / sizeof(uint32_t), (uint64_t) UINT_MAX);
+
+    const uint32_t n = max((uint64_t)MIN_PRIMES, MAX_RANGE);
     std::cout<<"Generating prime numbers from 0 - "<<n<<"\n";
     
     // If the GPU doesn't have enough memory to generate the minimum
