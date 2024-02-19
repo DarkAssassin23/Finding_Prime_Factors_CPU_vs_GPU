@@ -10,6 +10,7 @@
 #include "gpu.h"
 #include "primes.h"
 #include "utils.h"
+#include "utils/primes.h"
 
 // Point at witch multithreading actually improves
 // performance, based on testing
@@ -172,9 +173,7 @@ int main(int argc, char const *argv[])
     }
     else if(strcmp(argv[1],"-r")==0)
     {
-        const int MAX_RANGE = 50000000;
-        cout<<"Generating prime numbers from 0 - "<<MAX_RANGE<<"\n";
-        vector<int> primes = multithreadPrimeGen(MAX_RANGE);
+        vector<uint64_t> primes = genPrimesGPU();
         cout<<"Done.\n";
 
         int nums = std::stoull(argv[2]);
