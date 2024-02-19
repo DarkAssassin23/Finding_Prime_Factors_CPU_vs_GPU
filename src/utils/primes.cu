@@ -55,7 +55,7 @@ std::vector<int> multithreadPrimeGen(int maxNumber)
     return primeList;
 }
 
-int genRandomNum(int lower, int upper)
+uint32_t genRandomNum(uint32_t lower, uint32_t upper)
 {
     std::random_device dev;
     std::mt19937 rng(dev());
@@ -64,10 +64,10 @@ int genRandomNum(int lower, int upper)
     return genRandom(rng);
 }
 
-uint64_t getRandomProduct(std::vector<uint64_t> *primes)
+uint64_t getRandomProduct(std::vector<uint32_t> *primes)
 {
-    int p1 = genRandomNum(0, primes->size());
-    int p2 = p1;
+    uint32_t p1 = genRandomNum(0, primes->size());
+    uint32_t p2 = p1;
     do
     {
         p2 = genRandomNum(0, primes->size());
@@ -83,11 +83,11 @@ uint64_t getRandomProduct(std::vector<uint64_t> *primes)
 #define BLOCK_SPACE 2 * THREADS_PER_BLOCK
 #define MIN_PRIMES 10000000 // Minimum primes to generate
 
-__global__ void initialize(uint64_t* isPrime, uint64_t n) 
+__global__ void initialize(uint32_t* isPrime, uint32_t n) 
 {
-    uint64_t idx = blockIdx.x * THREADS_PER_BLOCK + threadIdx.x;
-    uint64_t step = gridDim.x * THREADS_PER_BLOCK;
-    uint64_t i;
+    uint32_t idx = blockIdx.x * THREADS_PER_BLOCK + threadIdx.x;
+    uint32_t step = gridDim.x * THREADS_PER_BLOCK;
+    uint32_t i;
     for (i = idx; i <= 1; i += step)
         isPrime[i] = 0;
 
@@ -95,43 +95,43 @@ __global__ void initialize(uint64_t* isPrime, uint64_t n)
         isPrime[i] = 1;
 }
 
-__global__ void clearMultiples(uint64_t* isPrime, uint64_t* primeList, 
-                               uint64_t startInd, uint64_t endInd, 
-                               uint64_t n) 
+__global__ void clearMultiples(uint32_t* isPrime, uint32_t* primeList, 
+                               uint32_t startInd, uint32_t endInd, 
+                               uint32_t n) 
 {
-    uint64_t yidx = blockIdx.y * blockDim.y + threadIdx.y;
-    uint64_t xidx = blockIdx.x * blockDim.x + threadIdx.x;
-    uint64_t ystep = gridDim.y * blockDim.y;
-    uint64_t xstep = gridDim.x * blockDim.x;
-    for (uint64_t pnum = startInd + yidx; pnum < endInd; pnum += ystep) 
+    uint32_t yidx = blockIdx.y * blockDim.y + threadIdx.y;
+    uint32_t xidx = blockIdx.x * blockDim.x + threadIdx.x;
+    uint32_t ystep = gridDim.y * blockDim.y;
+    uint32_t xstep = gridDim.x * blockDim.x;
+    for (uint32_t pnum = startInd + yidx; pnum < endInd; pnum += ystep) 
     {
-        uint64_t p = primeList[pnum];
-        uint64_t pstart = p * (p + xidx);
-        uint64_t pstep = p * xstep;
-        for (uint64_t i = pstart; i < n; i += pstep)
+        uint32_t p = primeList[pnum];
+        uint32_t pstart = p * (p + xidx);
+        uint32_t pstep = p * xstep;
+        for (uint32_t i = pstart; i < n; i += pstep)
             isPrime[i] = 0;
 
     }
 }
 
-__device__ void makeCounts(uint64_t* isPrime, uint64_t* addend, 
-                           uint64_t start, uint64_t stop) 
+__device__ void makeCounts(uint32_t* isPrime, uint32_t* addend, 
+                           uint32_t start, uint32_t stop) 
 {
-    __shared__ uint64_t tmpCounts[BLOCK_SPACE];
-    __shared__ uint64_t dumbCounts[BLOCK_SPACE];
-    uint64_t idx = threadIdx.x;
+    __shared__ uint32_t tmpCounts[BLOCK_SPACE];
+    __shared__ uint32_t dumbCounts[BLOCK_SPACE];
+    uint32_t idx = threadIdx.x;
     tmpCounts[idx] = ((start + idx) < stop) ? isPrime[start + idx] : 0;
     __syncthreads();
-    uint64_t numEntries = THREADS_PER_BLOCK;
-    uint64_t cstart = 0;
+    uint32_t numEntries = THREADS_PER_BLOCK;
+    uint32_t cstart = 0;
     while (numEntries > 1) 
     {
-        uint64_t prevStart = cstart;
+        uint32_t prevStart = cstart;
         cstart += numEntries;
         numEntries /= 2;
         if (idx < numEntries)
         {
-            uint64_t i1 = idx * 2 + prevStart;
+            uint32_t i1 = idx * 2 + prevStart;
             tmpCounts[idx + cstart] = tmpCounts[i1] + tmpCounts[i1 + 1];
         }
         __syncthreads();
@@ -143,12 +143,12 @@ __device__ void makeCounts(uint64_t* isPrime, uint64_t* addend,
     }
     while (cstart > 0) 
     {
-        uint64_t prevStart = cstart;
+        uint32_t prevStart = cstart;
         cstart -= numEntries * 2;
         if (idx < numEntries) 
         {
-            uint64_t v1 = tmpCounts[idx + prevStart];
-            uint64_t i1 = idx * 2 + cstart;
+            uint32_t v1 = tmpCounts[idx + prevStart];
+            uint32_t i1 = idx * 2 + cstart;
             tmpCounts[i1 + 1] = tmpCounts[i1] + v1;
             tmpCounts[i1] = v1;
             dumbCounts[i1] = dumbCounts[i1 + 1] = dumbCounts[idx + prevStart];
@@ -163,24 +163,24 @@ __device__ void makeCounts(uint64_t* isPrime, uint64_t* addend,
     }
 }
 
-__global__ void createCounts(uint64_t* isPrime, uint64_t* addend, 
-                             uint64_t lb, uint64_t ub) 
+__global__ void createCounts(uint32_t* isPrime, uint32_t* addend, 
+                             uint32_t lb, uint32_t ub) 
 {
-    uint64_t step = gridDim.x * THREADS_PER_BLOCK;
-    for (uint64_t i = lb + blockIdx.x * THREADS_PER_BLOCK; i < ub; i += step) 
+    uint32_t step = gridDim.x * THREADS_PER_BLOCK;
+    for (uint32_t i = lb + blockIdx.x * THREADS_PER_BLOCK; i < ub; i += step) 
     {
-        uint64_t start = i;
-        uint64_t stop = min(i + step, ub);
+        uint32_t start = i;
+        uint32_t stop = min(i + step, ub);
         makeCounts(isPrime, addend, start, stop);
     }
 }
 
-__global__ void sumCounts(uint64_t* isPrime, uint64_t* addend, 
-                          uint64_t lb, uint64_t ub, uint64_t* totalsum) 
+__global__ void sumCounts(uint32_t* isPrime, uint32_t* addend, 
+                          uint32_t lb, uint32_t ub, uint32_t* totalsum) 
 {
-    uint64_t idx = blockIdx.x;
-    uint64_t s = 0;
-    for (uint64_t i = lb + idx; i < ub; i += THREADS_PER_BLOCK) 
+    uint32_t idx = blockIdx.x;
+    uint32_t s = 0;
+    for (uint32_t i = lb + idx; i < ub; i += THREADS_PER_BLOCK) 
     {
         isPrime[i] += s;
         s += addend[i];
@@ -189,22 +189,22 @@ __global__ void sumCounts(uint64_t* isPrime, uint64_t* addend,
         *totalsum = s;
 }
 
-__global__ void condensePrimes(uint64_t* isPrime, uint64_t* primeList, 
-                               uint64_t lb, uint64_t ub,
-                               uint64_t primeStartInd, uint64_t primeCount) 
+__global__ void condensePrimes(uint32_t* isPrime, uint32_t* primeList, 
+                               uint32_t lb, uint32_t ub,
+                               uint32_t primeStartInd, uint32_t primeCount) 
 {
-    uint64_t idx = blockIdx.x * THREADS_PER_BLOCK + threadIdx.x;
-    uint64_t step = gridDim.x * THREADS_PER_BLOCK;
-    for (uint64_t i = lb + idx; i < ub; i += step)
+    uint32_t idx = blockIdx.x * THREADS_PER_BLOCK + threadIdx.x;
+    uint32_t step = gridDim.x * THREADS_PER_BLOCK;
+    for (uint32_t i = lb + idx; i < ub; i += step)
     {
-        uint64_t term = isPrime[i];
-        uint64_t nextTerm = i + 1 == ub ? primeCount : isPrime[i + 1];
+        uint32_t term = isPrime[i];
+        uint32_t nextTerm = i + 1 == ub ? primeCount : isPrime[i + 1];
         if (term < nextTerm)
             primeList[primeStartInd + term] = i;
     }
 }
 
-std::vector<uint64_t> genPrimesGPU(void)
+std::vector<uint32_t> genPrimesGPU(void)
 {
     // Get device properties of GPU 0 to get the amount of memory available
     // and calculate how many primes we can generate
@@ -213,9 +213,9 @@ std::vector<uint64_t> genPrimesGPU(void)
 
     // Half the memory for `isPrime` and the other half for `addend`
     // plus buffer to not allocate more VRAM than the card has
-    const uint64_t MAX_RANGE = (prop.totalGlobalMem * 0.45f) 
-                                / sizeof(uint64_t);
-    const uint64_t n = max((uint64_t)MIN_PRIMES, MAX_RANGE);
+    const uint32_t MAX_RANGE = (prop.totalGlobalMem * 0.45f) 
+                                / sizeof(uint32_t);
+    const uint32_t n = max((uint32_t)MIN_PRIMES, MAX_RANGE);
     std::cout<<"Generating prime numbers from 0 - "<<n<<"\n";
     
     // If the GPU doesn't have enough memory to generate the minimum
@@ -223,55 +223,55 @@ std::vector<uint64_t> genPrimesGPU(void)
     if(MAX_RANGE < MIN_PRIMES)
     {
         std::vector<int> tmp = multithreadPrimeGen((int) n);
-        std::vector<uint64_t> result;
+        std::vector<uint32_t> result;
         std::copy(tmp.begin(), tmp.end(), 
                   back_inserter(result));
 
         return result;
     }
 
-    uint64_t *isPrime, *addend, *numPrimes, *primeList;
-    cudaError_t t = cudaMalloc((void**) &isPrime, n * sizeof(uint64_t));
+    uint32_t *isPrime, *addend, *numPrimes, *primeList;
+    cudaError_t t = cudaMalloc((void**) &isPrime, n * sizeof(uint32_t));
     assert(t == cudaSuccess);
     
-    t = cudaMalloc(&addend, n * sizeof(uint64_t));
+    t = cudaMalloc(&addend, n * sizeof(uint32_t));
     assert(t == cudaSuccess);
     
-    t = cudaMalloc(&numPrimes, sizeof(uint64_t));
+    t = cudaMalloc(&numPrimes, sizeof(uint32_t));
     assert(t == cudaSuccess);
     
-    uint64_t primeBound = 2 * n / log(n);
-    t = cudaMalloc(&primeList, primeBound * sizeof(uint64_t));
+    uint32_t primeBound = 2 * n / log(n);
+    t = cudaMalloc(&primeList, primeBound * sizeof(uint32_t));
     assert(t == cudaSuccess);
     
-    uint64_t numBlocks = min((uint64_t)MAX_BLOCKS,
+    uint32_t numBlocks = min((uint32_t)MAX_BLOCKS,
                              (n + THREADS_PER_BLOCK - 1) 
                              / THREADS_PER_BLOCK);
     initialize<<<numBlocks, THREADS_PER_BLOCK>>>(isPrime, n);
     t = cudaDeviceSynchronize();
     assert(t == cudaSuccess);
 
-    uint64_t bound = (uint64_t) ceil(sqrt(n));
-    uint64_t lb;
-    uint64_t ub = 2;
-    uint64_t primeStartInd = 0;
-    uint64_t primeEndInd = 0;
+    uint32_t bound = (uint32_t) ceil(sqrt(n));
+    uint32_t lb;
+    uint32_t ub = 2;
+    uint32_t primeStartInd = 0;
+    uint32_t primeEndInd = 0;
 
     while (ub < n) 
     {
         if (primeEndInd > primeStartInd) 
         {
-            uint64_t lowprime;
+            uint32_t lowprime;
             t = cudaMemcpy(&lowprime, primeList + primeStartInd, 
-                           sizeof(uint64_t), cudaMemcpyDeviceToHost);
+                           sizeof(uint32_t), cudaMemcpyDeviceToHost);
             assert(t == cudaSuccess);
 
-            uint64_t numcols = n / lowprime;
-            uint64_t numrows = primeEndInd - primeStartInd;
-            uint64_t threadx = min(numcols, (uint64_t)THREADS_PER_BLOCK);
-            uint64_t thready = min(numrows, THREADS_PER_BLOCK / threadx);
-            uint64_t blockx = min(numcols / threadx, (uint64_t) MAX_BLOCKS);
-            uint64_t blocky = min(numrows / thready, MAX_BLOCKS / blockx);
+            uint32_t numcols = n / lowprime;
+            uint32_t numrows = primeEndInd - primeStartInd;
+            uint32_t threadx = min(numcols, (uint32_t)THREADS_PER_BLOCK);
+            uint32_t thready = min(numrows, THREADS_PER_BLOCK / threadx);
+            uint32_t blockx = min(numcols / threadx, (uint32_t) MAX_BLOCKS);
+            uint32_t blocky = min(numrows / thready, MAX_BLOCKS / blockx);
 
             dim3 gridsize(blockx, blocky);
             dim3 blocksize(threadx, thready);
@@ -286,7 +286,7 @@ std::vector<uint64_t> genPrimesGPU(void)
         if (lb >= bound)
             ub = n;
         
-        numBlocks = min((uint64_t)MAX_BLOCKS,
+        numBlocks = min((uint32_t)MAX_BLOCKS,
                         (ub - lb + THREADS_PER_BLOCK - 1) 
                         / THREADS_PER_BLOCK);
 
@@ -300,8 +300,8 @@ std::vector<uint64_t> genPrimesGPU(void)
         t = cudaDeviceSynchronize();
         assert(t == cudaSuccess);
 
-        uint64_t primeCount;
-        t = cudaMemcpy(&primeCount, numPrimes, sizeof(uint64_t),
+        uint32_t primeCount;
+        t = cudaMemcpy(&primeCount, numPrimes, sizeof(uint32_t),
                        cudaMemcpyDeviceToHost);
         assert(t == cudaSuccess);
         assert(primeCount > 0);
@@ -316,9 +316,9 @@ std::vector<uint64_t> genPrimesGPU(void)
         assert(t == cudaSuccess);
     }
 
-    uint64_t *finalprimes = (uint64_t *) malloc(primeEndInd 
-                                                * sizeof(uint64_t));
-    t = cudaMemcpy(finalprimes, primeList, primeEndInd * sizeof(uint64_t),
+    uint32_t *finalprimes = (uint32_t *) malloc(primeEndInd 
+                                                * sizeof(uint32_t));
+    t = cudaMemcpy(finalprimes, primeList, primeEndInd * sizeof(uint32_t),
                    cudaMemcpyDeviceToHost);
     assert(t == cudaSuccess);
 
@@ -334,7 +334,7 @@ std::vector<uint64_t> genPrimesGPU(void)
     t = cudaFree(primeList);
     assert(t == cudaSuccess);
     
-    std::vector<uint64_t> result;
+    std::vector<uint32_t> result;
     std::copy(&finalprimes[0], &finalprimes[primeEndInd], 
               back_inserter(result));
 

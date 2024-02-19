@@ -173,7 +173,7 @@ int main(int argc, char const *argv[])
     }
     else if(strcmp(argv[1],"-r")==0)
     {
-        vector<uint64_t> primes = genPrimesGPU();
+        vector<uint32_t> primes = genPrimesGPU();
         cout<<"Done.\n";
 
         int nums = std::stoull(argv[2]);
